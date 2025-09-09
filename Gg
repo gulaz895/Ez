@@ -1,0 +1,29 @@
+-- LocalScript
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+-- ค่า speed การหมุน
+local spinPower = 10 -- ยิ่งเยอะหมุนแรง
+local randomizeEvery = 0.5 -- เปลี่ยนทิศทุกๆ กี่วินาที
+
+-- เก็บเวลากับทิศหมุน
+local lastChange = 0
+local spinVector = Vector3.new(0,1,0)
+
+RunService.RenderStepped:Connect(function(dt)
+    if tick() - lastChange >= randomizeEvery then
+        -- สุ่มทิศทางใหม่
+        spinVector = Vector3.new(
+            math.random(-1,1),
+            math.random(-1,1),
+            math.random(-1,1)
+        ).Unit
+        lastChange = tick()
+    end
+
+    -- หมุนตัวละคร
+    hrp.CFrame = hrp.CFrame * CFrame.fromAxisAngle(spinVector, spinPower * dt)
+end)

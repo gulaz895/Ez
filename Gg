@@ -1,39 +1,60 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
 local hrp = char:WaitForChild("HumanoidRootPart")
 
-local radius = 4           -- รัศมีในการวาร์ป (4 studs)
-local teleportDelay = 0.2  -- ทุกกี่วิถึงจะวาร์ป
+-- สร้าง GUI ปุ่ม
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- ฟังก์ชันสร้างเอฟเฟกต์ประกายไฟ
-local function createEffect(position)
-    local p = Instance.new("ParticleEmitter")
-    p.Texture = "rbxassetid://4834486875" -- ประกายไฟ
-    p.Rate = 100
-    p.Lifetime = NumberRange.new(0.2)
-    p.Speed = NumberRange.new(5,10)
-    p.Rotation = NumberRange.new(0,360)
-    p.RotSpeed = NumberRange.new(-180,180)
-    p.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.5),NumberSequenceKeypoint.new(1,0)})
-    p.Parent = hrp
-    game.Debris:AddItem(p, 0.3) -- ลบอัตโนมัติ
-end
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 120, 0, 50)
+button.Position = UDim2.new(0.05, 0, 0.1, 0)
+button.Text = "🛡️ โหมดลอย"
+button.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Parent = screenGui
+button.Visible = true
 
-while task.wait(teleportDelay) do
-    if char and hrp then
-        -- สร้างเอฟเฟกต์ก่อนวาร์ป
-        createEffect(hrp.Position)
+local enabled = false
+local originalPosition = nil
+local isFloating = false
+local floatHeight = 30
 
-        -- สุ่มตำแหน่งในวงกลมรอบตัว
-        local randomX = math.random(-radius, radius)
-        local randomZ = math.random(-radius, radius)
-        local offset = Vector3.new(randomX, 0, randomZ)
+-- สลับเปิด/ปิด
+button.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	if enabled then
+		button.Text = "✅ เปิดโหมดลอย"
+		button.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+	else
+		button.Text = "🛡️ โหมดลอย"
+		button.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+		if isFloating and originalPosition then
+			hrp.CFrame = originalPosition
+			isFloating = false
+		end
+	end
+end)
 
-        -- ย้ายตำแหน่ง (วาร์ป)
-        hrp.CFrame = hrp.CFrame + offset
-
-        -- เอฟเฟกต์หลังวาร์ป
-        createEffect(hrp.Position)
-    end
-end
+-- ตรวจเลือดและล็อคตัวบนอากาศ
+RunService.Heartbeat:Connect(function()
+	if enabled then
+		local hp = hum.Health
+		if hp <= 10 then
+			if not isFloating then
+				originalPosition = hrp.CFrame
+				isFloating = true
+			end
+			-- ลอยขึ้น 30 studs
+			hrp.CFrame = CFrame.new(originalPosition.Position + Vector3.new(0,floatHeight,0))
+		elseif hp >= 12 and isFloating and originalPosition then
+			-- ลงกลับตำแหน่งเดิม
+			hrp.CFrame = originalPosition
+			isFloating = false
+		end
+		-- ระหว่าง 10-12 ค้างบนอากาศ
+	end
+end)
